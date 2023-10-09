@@ -28,7 +28,6 @@ void matrix_avx256(double* M, const double* A, const double* B, size_t n)
     size_t N = sizeof(double) * n / sizeof(__m256d);
     for (size_t c = 0; c < n; c += N)
     {
-
         for (size_t r = 0; r < n; r++)
         {
             __m256d a = _mm256_load_pd(&A[c * n + r]);
@@ -53,12 +52,24 @@ void matrix_multiply_avx256(double* M, double* A, double* B, size_t n) {
     }
 }
 
+void matrix_multiply(double* M, double* A, double* B, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < n; j++) {
+            double sum = 0.0;
+            for (size_t k = 0; k < n; k++) {
+                sum += A[i * n + k] * B[k * n + j];
+            }
+            M[i * n + j] = sum;
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
     size_t N = 1024; // 1048575 when 1048576 max
-    auto m = make_unique<double[]>(N*N);
-    auto a = make_unique<double[]>(N*N);
-    auto b = make_unique<double[]>(N*N);
+    double* m = new double[N * N];
+    double* a = new double[N * N];
+    double* b = new double[N * N];
     
     std::random_device dev;
     std::mt19937 rng(dev());
@@ -68,16 +79,18 @@ int main(int argc, char* argv[])
         a[i] = dist6(rng);
     for (size_t i = 0; i < N*N; i++)
         b[i] = dist6(rng);
+
+    auto time1 = get_time(matrix_avx256, m, a, b, N);
+    std::cout << "Add straightforward time: " << time1 << std::endl;
     
-    //auto time1 = get_time(matrix_avx256, m.get(), a.get(), b.get(), N);
-    //std::cout << "Add parallel time: " << time1 << std::endl;
+    auto time3 = get_time(matrix_add, m, a, b, N);
+    std::cout << "Add parallel time: " << time3 << std::endl;
     
-    auto time2 = get_time(matrix_multiply_avx256, m.get(), a.get(), b.get(), N);
-    std::cout << "Add parallel multiply: " << time2 << std::endl;
-    
-    m.reset();
-    a.reset();
-    b.reset();
+    auto time2 = get_time(matrix_multiply_avx256, m, a, b, N);
+    std::cout << "Parallel multiply time: " << time2 << std::endl;
+
+    auto time4 = get_time(matrix_multiply, m, a, b, N);
+    std::cout << "Straightforward multiply time: " << time4 << std::endl;
     
     return 0;
 }
