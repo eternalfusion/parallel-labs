@@ -76,9 +76,10 @@ int main(int argc, char* argv[])
     std::uniform_int_distribution<std::mt19937::result_type> dist6(1,6); // distribution in range [1, 6]
 
     for (size_t i = 0; i < N*N; i++)
+    {
         a[i] = dist6(rng);
-    for (size_t i = 0; i < N*N; i++)
         b[i] = dist6(rng);
+    }
 
     auto time1 = get_time(matrix_avx256, m, a, b, N);
     std::cout << "Add straightforward time: " << time1 << std::endl;
